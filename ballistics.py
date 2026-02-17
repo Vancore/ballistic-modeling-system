@@ -33,9 +33,24 @@ mode = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 
-v0 = st.sidebar.number_input(r"Initial Velocity ($v_0$), m/s", value=50.0)
-deg = st.sidebar.number_input(r"Elevation Angle ($\alpha$), deg", value=45.0)
-g = st.sidebar.number_input(r"Gravitational Acceleration ($g$), m/s²", value=9.80665, format="%.5f")
+v0 = st.sidebar.number_input(
+    r"Initial Velocity ($v_0$), m/s", 
+    value=50.0, 
+    format="%.4f", 
+    step=0.1
+)
+deg = st.sidebar.number_input(
+    r"Elevation Angle ($\alpha$), deg", 
+    value=45.0, 
+    format="%.4f", 
+    step=0.1
+)
+g = st.sidebar.number_input(
+    r"Gravitational Acceleration ($g$), m/s²", 
+    value=9.80665, 
+    format="%.5f", 
+    step=0.00001
+)
 
 rad = math.radians(deg)
 
@@ -44,32 +59,58 @@ dist, h_max, t_max = 0, 0, 0
 
 if mode == "Atmospheric Model":
     st.sidebar.markdown("#### Environment & Object")
-    m = st.sidebar.number_input(r"Projectile Mass ($m$), kg", value=1.0)
-    cw = st.sidebar.number_input(r"Drag Coefficient ($C_x$)", value=0.47)
-    rho = st.sidebar.number_input(r"Air Density ($\rho$), kg/m³", value=1.225)
-    s = st.sidebar.number_input(r"Cross-sectional Area ($S$), m²", value=0.01)
+    m = st.sidebar.number_input(
+        r"Projectile Mass ($m$), kg", 
+        value=1.0, 
+        min_value=1e-9,
+        format="%.6f",
+        step=0.000001
+    )
+    cw = st.sidebar.number_input(
+        r"Drag Coefficient ($C_x$)", 
+        value=0.47, 
+        format="%.4f", 
+        step=0.0001
+    )
+    rho = st.sidebar.number_input(
+        r"Air Density ($\rho$), kg/m³", 
+        value=1.225, 
+        format="%.4f", 
+        step=0.001
+    )
+    s = st.sidebar.number_input(
+        r"Cross-sectional Area ($S$), m²", 
+        value=0.01, 
+        format="%.6f",
+        step=0.000001
+    )
 
     t, x, y = 0.0, 0.0, 0.0
     vx = v0 * math.cos(rad)
     vy = v0 * math.sin(rad)
     dt = 0.001
+    max_steps = 100000 
+    steps_count = 0
 
-    while y >= 0.0:
+    while y >= 0.0 and steps_count < max_steps:
         xs.append(x)
         ys.append(y)
         ts.append(t)
 
         v = math.sqrt(vx**2 + vy**2)
         f = 0.5 * cw * rho * s * v * v
+        mass = m if m > 0 else 1e-9
 
-        ax = -f * vx / (m * v)
-        ay = -g - f * vy / (m * v)
+        ax = -f * vx / (mass * v) if v > 0 else 0
+        ay = -g - f * vy / (mass * v) if v > 0 else -g
 
         vx += ax * dt
         vy += ay * dt
         x += vx * dt
         y += vy * dt
         t += dt
+        
+        steps_count += 1
 
         if y > h_max: h_max = y
     
@@ -77,19 +118,26 @@ if mode == "Atmospheric Model":
     t_max = t
 
 else:
-    L = (v0**2 * math.sin(2 * rad)) / g
-    H = (v0**2 * (math.sin(rad)**2)) / (2 * g)
-    T = (2 * v0 * math.sin(rad)) / g
+    safe_v0 = v0 if v0 > 0 else 1e-5
+    
+    L = (safe_v0**2 * math.sin(2 * rad)) / g
+    H = (safe_v0**2 * (math.sin(rad)**2)) / (2 * g)
+    T = (2 * safe_v0 * math.sin(rad)) / g
 
     dist, h_max, t_max = L, H, T
 
     steps = 500
-    dx = L / steps
+    dx = L / steps if steps > 0 else 1e-9
     
     curr_x = 0.0
     while curr_x <= L:
-        curr_y = curr_x * math.tan(rad) - (g * curr_x**2) / (2 * v0**2 * math.cos(rad)**2)
-        curr_t = curr_x / (v0 * math.cos(rad))
+        cos_rad = math.cos(rad)
+        if abs(cos_rad) < 1e-9:
+             curr_y = 0
+             curr_t = 0
+        else:
+            curr_y = curr_x * math.tan(rad) - (g * curr_x**2) / (2 * safe_v0**2 * cos_rad**2)
+            curr_t = curr_x / (safe_v0 * cos_rad)
 
         if curr_y < 0: curr_y = 0
 
@@ -106,11 +154,11 @@ st.markdown("### 📊 Performance Metrics")
 k1, k2, k3 = st.columns(3)
 
 with k1:
-    st.metric(label="Maximum Range", value=f"{dist:.3f} m", delta="Horizontal")
+    st.metric(label="Maximum Range", value=f"{dist:.4f} m", delta="Horizontal")
 with k2:
-    st.metric(label="Peak Altitude (Apogee)", value=f"{h_max:.3f} m", delta="Vertical")
+    st.metric(label="Peak Altitude (Apogee)", value=f"{h_max:.4f} m", delta="Vertical")
 with k3:
-    st.metric(label="Total Flight Time", value=f"{t_max:.3f} s", delta="Temporal")
+    st.metric(label="Total Flight Time", value=f"{t_max:.4f} s", delta="Temporal")
 
 fig = go.Figure()
 
@@ -119,11 +167,19 @@ fig.add_trace(go.Scatter(
     mode='lines',
     name='Trajectory Vector',
     line=dict(color='#00cc96', width=4),
-    hovertemplate='<b>Distance</b>: %{x:.2f} m<br><b>Altitude</b>: %{y:.2f} m<extra></extra>'
+    hovertemplate='<b>Distance</b>: %{x:.4f} m<br><b>Altitude</b>: %{y:.4f} m<extra></extra>'
 ))
 
+apogee_x = dist/2
+if mode == "Atmospheric Model" and ys:
+    try:
+        max_idx = ys.index(max(ys))
+        apogee_x = xs[max_idx]
+    except ValueError:
+        apogee_x = 0
+
 fig.add_trace(go.Scatter(
-    x=[dist/2 if mode != "Atmospheric Model" else xs[ys.index(max(ys))]], 
+    x=[apogee_x], 
     y=[h_max],
     mode='markers',
     name='Apogee',
