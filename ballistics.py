@@ -2,10 +2,11 @@ import streamlit as st
 import math
 import pandas as pd
 import plotly.graph_objects as go
+from PIL import Image
 
 st.set_page_config(
     page_title="Ballistic Modeling System",
-    page_icon="📐",
+    page_icon=Image.open("logo.png"),
     layout="wide"
 )
 
