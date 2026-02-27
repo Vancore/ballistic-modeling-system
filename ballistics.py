@@ -65,19 +65,20 @@ st.markdown("""
 st.title("Ballistic Modeling System")
 
 tp = st.sidebar.radio("Simulation Type:", ("Vacuum", "Atmosphere"))
-v0 = st.sidebar.number_input("Velocity (m/s):", value=60.0)
-ang = st.sidebar.number_input("Angle (deg):", value=45.0)
-g = 9.80665
+
+v0 = st.sidebar.number_input("Velocity (m/s):", value=60.0, format="%.4f", step=0.1)
+ang = st.sidebar.number_input("Angle (deg):", value=45.0, format="%.2f", step=0.1)
+g = st.sidebar.number_input("Gravity (m/s²):", value=9.80665, format="%.5f", step=0.0001)
 
 rd = math.radians(ang)
 lx, ly, lt = [], [], []
 d, h, t_end = 0, 0, 0
 
 if tp == "Atmosphere":
-    m = st.sidebar.number_input("Mass (kg):", value=1.0)
-    cw = st.sidebar.number_input("Drag Coeff:", value=0.47)
-    rho = st.sidebar.number_input("Air Density:", value=1.225)
-    s = st.sidebar.number_input("Area (m2):", value=0.01)
+    m = st.sidebar.number_input("Mass (kg):", value=1.0, format="%.4f", step=0.01)
+    cw = st.sidebar.number_input("Drag Coeff:", value=0.47, format="%.4f", step=0.0001)
+    rho = st.sidebar.number_input("Air Density:", value=1.225, format="%.4f", step=0.001)
+    s = st.sidebar.number_input("Area (m2):", value=0.01, format="%.6f", step=0.000001)
 
     t, x, y = 0.0, 0.0, 0.0
     vx = v0 * math.cos(rd)
@@ -120,9 +121,9 @@ else:
         lt.append(curr_t)
 
 c1, c2, c3 = st.columns(3)
-c1.metric("RANGE", f"{d:.2f} m")
-c2.metric("APOGEE", f"{h:.2f} m")
-c3.metric("TIME", f"{t_end:.2f} s")
+c1.metric("RANGE", f"{d:.4f} m")
+c2.metric("APOGEE", f"{h:.4f} m")
+c3.metric("TIME", f"{t_end:.4f} s")
 
 fig = go.Figure()
 fig.add_trace(go.Scatter(
