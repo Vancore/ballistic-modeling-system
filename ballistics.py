@@ -6,7 +6,7 @@ from PIL import Image
 
 # Конфиг страницы
 st.set_page_config(
-    page_title="Ballistic Modeling System v2.0",
+    page_title="Ballistic Modeling System",
     page_icon=Image.open("logo.png"),
     layout="wide"
 )
@@ -42,8 +42,8 @@ st.title("Ballistic Modeling System")
 
 # Ввод параметров
 sim_mode = st.sidebar.radio("Simulation Type:", ("Vacuum", "Atmosphere"))
-v0 = st.sidebar.number_input("Velocity (m/s):", value=60.0, format="%.6f", step=0.1)
-angle_deg = st.sidebar.number_input("Angle (deg):", value=45.0, format="%.4f", step=0.1)
+v0 = st.sidebar.number_input("Velocity (m/s):", value=60.0, format="%.2f", step=0.1)
+angle_deg = st.sidebar.number_input("Angle (deg):", value=45.0, format="%.2f", step=0.1)
 g_val = st.sidebar.number_input("Gravity (m/s²):", value=9.80665, format="%.6f", step=0.0001)
 
 rad = math.radians(angle_deg)
